@@ -2,6 +2,10 @@ import sys
 import os
 import pytest
 from unittest.mock import MagicMock
+from typing import List, Optional
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
 
 BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BACKEND_DIR not in sys.path:
@@ -68,3 +72,68 @@ def mock_vector_store():
 @pytest.fixture
 def mock_anthropic_client():
     return MagicMock()
+
+
+# ── API test-app factory ─────────────────────────────────────────────────────
+# Mirrors app.py routes without the StaticFiles mount or startup ingestion,
+# so tests can run without a frontend/ directory or ChromaDB.
+
+def _build_test_app(rag_system) -> FastAPI:
+    """Return a FastAPI app wired to rag_system (any MagicMock or real instance)."""
+
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[dict]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    _app = FastAPI()
+
+    @_app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        try:
+            session_id = request.session_id
+            if not session_id:
+                session_id = rag_system.session_manager.create_session()
+            answer, sources = rag_system.query(request.query, session_id)
+            return QueryResponse(answer=answer, sources=sources, session_id=session_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @_app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        try:
+            analytics = rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"],
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return _app
+
+
+@pytest.fixture
+def mock_rag_system():
+    rag = MagicMock()
+    rag.session_manager.create_session.return_value = "auto-session-id"
+    rag.query.return_value = ("Default answer.", [])
+    rag.get_course_analytics.return_value = {
+        "total_courses": 2,
+        "course_titles": ["Course A", "Course B"],
+    }
+    return rag
+
+
+@pytest.fixture
+def api_client(mock_rag_system):
+    """TestClient for the API-only test app (no static files)."""
+    return TestClient(_build_test_app(mock_rag_system))
