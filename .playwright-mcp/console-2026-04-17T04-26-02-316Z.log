@@ -1,0 +1,9 @@
+[      31ms] [LOG] Loading course stats... @ http://localhost:8000/script.js?v=9:171
+[      37ms] [LOG] Course data received: {total_courses: 4, course_titles: Array(4)} @ http://localhost:8000/script.js?v=9:176
+[   22174ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8000/api/query:0
+[   33844ms] [LOG] Loading course stats... @ http://localhost:8000/script.js?v=9:171
+[   33851ms] [LOG] Course data received: {total_courses: 4, course_titles: Array(4)} @ http://localhost:8000/script.js?v=9:176
+[   71763ms] [LOG] Loading course stats... @ http://localhost:8000/script.js?v=9:171
+[   71768ms] [LOG] Course data received: {total_courses: 4, course_titles: Array(4)} @ http://localhost:8000/script.js?v=9:176
+[   78373ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8000/api/query:0
+[   81606ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:8000/api/query:0
