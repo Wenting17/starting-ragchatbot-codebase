@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - button "Switch to light mode" [ref=e2] [cursor=pointer]:
+    - img [ref=e3]
+    - img [ref=e9]
+  - generic [ref=e12]:
+    - complementary [ref=e13]:
+      - button "+ New Chat" [ref=e14] [cursor=pointer]
+      - group [ref=e16]:
+        - generic "▶ Courses" [ref=e17] [cursor=pointer]
+      - group [ref=e19]:
+        - generic "▶ Try asking:" [ref=e20] [cursor=pointer]
+    - main [ref=e21]:
+      - generic [ref=e22]:
+        - paragraph [ref=e26]: Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?
+        - generic [ref=e27]:
+          - textbox "Ask about courses, lessons, or specific content..." [ref=e28]
+          - button [ref=e29] [cursor=pointer]:
+            - img [ref=e30]

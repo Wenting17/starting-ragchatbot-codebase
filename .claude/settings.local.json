@@ -45,7 +45,10 @@
       "Bash(python3 -c \"import anthropic; print\\(anthropic.__version__\\)\")",
       "mcp__playwright__browser_tabs",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git worktree *)"
     ]
   }
 }
