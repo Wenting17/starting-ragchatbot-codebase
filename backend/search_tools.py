@@ -89,29 +89,100 @@ class CourseSearchTool(Tool):
         """Format search results with course and lesson context"""
         formatted = []
         sources = []  # Track sources for the UI
-        
+
         for doc, meta in zip(results.documents, results.metadata):
             course_title = meta.get('course_title', 'unknown')
             lesson_num = meta.get('lesson_number')
-            
+
             # Build context header
             header = f"[{course_title}"
             if lesson_num is not None:
                 header += f" - Lesson {lesson_num}"
             header += "]"
-            
-            # Track source for the UI
-            source = course_title
+
+            # Track source with link for the UI
+            source_name = course_title
             if lesson_num is not None:
-                source += f" - Lesson {lesson_num}"
-            sources.append(source)
-            
+                source_name += f" - Lesson {lesson_num}"
+
+            # Look up lesson/course link from the catalog
+            link = None
+            if lesson_num is not None:
+                link = self.store.get_lesson_link(course_title, lesson_num)
+            if link is None:
+                link = self.store.get_course_link(course_title)
+
+            sources.append({"name": source_name, "link": link})
+
             formatted.append(f"{header}\n{doc}")
-        
+
         # Store sources for retrieval
         self.last_sources = sources
-        
+
         return "\n\n".join(formatted)
+
+class CourseOutlineTool(Tool):
+    """Tool for retrieving course outline including title, link, and lesson list"""
+
+    def __init__(self, vector_store: VectorStore):
+        self.store = vector_store
+        self.last_sources = []
+
+    def get_tool_definition(self) -> Dict[str, Any]:
+        return {
+            "name": "get_course_outline",
+            "description": "Get the full outline of a course including its title, course link, and a list of all lessons with their numbers and titles. Use this for questions about course structure, outlines, or lesson lists.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "course_title": {
+                        "type": "string",
+                        "description": "Course title or partial name to look up (e.g. 'MCP', 'RAG chatbot')"
+                    }
+                },
+                "required": ["course_title"]
+            }
+        }
+
+    def execute(self, course_title: str) -> str:
+        import json
+
+        # Resolve the course name via vector search on the catalog
+        resolved_title = self.store._resolve_course_name(course_title)
+        if not resolved_title:
+            return f"No course found matching '{course_title}'."
+
+        # Fetch the full metadata for the resolved course
+        try:
+            results = self.store.course_catalog.get(ids=[resolved_title])
+        except Exception as e:
+            return f"Error retrieving course metadata: {e}"
+
+        if not results or not results['metadatas'] or not results['metadatas'][0]:
+            return f"No metadata found for course '{resolved_title}'."
+
+        meta = results['metadatas'][0]
+        course_link = meta.get('course_link', '')
+        lessons_json = meta.get('lessons_json', '[]')
+        lessons = json.loads(lessons_json)
+
+        # Build formatted output
+        lines = [f"Course: {resolved_title}"]
+        if course_link:
+            lines.append(f"Course Link: {course_link}")
+        lines.append(f"Total Lessons: {len(lessons)}")
+        lines.append("")
+        lines.append("Lessons:")
+        for lesson in sorted(lessons, key=lambda l: l.get('lesson_number', 0)):
+            num = lesson.get('lesson_number', '?')
+            title = lesson.get('lesson_title', 'Untitled')
+            lines.append(f"  {num}. {title}")
+
+        # Track source for the UI
+        self.last_sources = [{"name": resolved_title, "link": course_link}]
+
+        return "\n".join(lines)
+
 
 class ToolManager:
     """Manages available tools for the AI"""

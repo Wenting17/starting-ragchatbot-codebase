@@ -2,8 +2,8 @@ import os
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (repo root)
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 @dataclass
 class Config:
@@ -25,5 +25,13 @@ class Config:
     CHROMA_PATH: str = "./chroma_db"  # ChromaDB storage location
 
 config = Config()
+
+_PLACEHOLDER = "your-api-key-here"
+if not config.ANTHROPIC_API_KEY or config.ANTHROPIC_API_KEY == _PLACEHOLDER:
+    raise ValueError(
+        "ANTHROPIC_API_KEY is not set. "
+        "Add your real Anthropic API key to the .env file at the repo root: "
+        "ANTHROPIC_API_KEY=sk-ant-..."
+    )
 
 
